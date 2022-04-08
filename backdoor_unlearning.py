@@ -132,7 +132,7 @@ def train(opt):
     model_ascent, checkpoint_epoch = select_model(dataset=opt.dataset,
                                 model_name=opt.model_name,
                                 pretrained=True,
-                                pretrained_models_path=opt.checkpoint_root,
+                                pretrained_models_path=opt.isolation_model_root,
                                 n_classes=opt.num_class)
     model_ascent.to(opt.device)
     print('Finish loading ascent model...')
@@ -151,9 +151,9 @@ def train(opt):
         criterion = nn.CrossEntropyLoss()
 
     print('----------- Data Initialization --------------')
-    data_path_isolation = os.path.join(opt.isolate_data_root, "{}-isolation{}%-examples.npy".format(opt.model_name,
+    data_path_isolation = os.path.join(opt.isolate_data_root, "{}_isolation{}%_examples.npy".format(opt.model_name,
                                                                                                     opt.isolation_ratio * 100))
-    data_path_other = os.path.join(opt.isolate_data_root, "{}-other{}%-examples.npy".format(opt.model_name,
+    data_path_other = os.path.join(opt.isolate_data_root, "{}_other{}%_examples.npy".format(opt.model_name,
                                                                                             100 - opt.isolation_ratio * 100))
 
     tf_compose_finetuning = transforms.Compose([

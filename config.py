@@ -4,7 +4,7 @@ def get_arguments():
     parser = argparse.ArgumentParser()
 
     # various path
-    parser.add_argument('--isolation_model_root', type=str, default='./weight/ABL_results',
+    parser.add_argument('--isolation_model_root', type=str, default='./weight/isolation_model/WRN-16-1-tuning_epochs5.tar',
                         help='isolation model weights are saved here')
     parser.add_argument('--unlearning_root', type=str, default='./weight/ABL_results',
                         help='unlearning models weight are saved here')
@@ -37,7 +37,7 @@ def get_arguments():
     parser.add_argument('--threshold_bad', type=float, default=90.0, help='threshold of save weight')
     parser.add_argument('--cuda', type=int, default=1)
     parser.add_argument('--device', type=str, default='cuda')
-    parser.add_argument('--save', type=int, default=1)
+    parser.add_argument('--save', type=str, default='weight/isolation_model')
     parser.add_argument('--interval', type=int, default=5, help='frequency of save model')
 
     # others

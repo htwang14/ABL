@@ -290,7 +290,9 @@ def adjust_learning_rate(optimizer, epoch, opt):
 
 def save_checkpoint(state, epoch, is_best, opt):
     if is_best:
-        filepath = os.path.join(opt.save, opt.model_name + r'-tuning_epochs{}.tar'.format(epoch))
+        if not os.path.isdir(str(opt.save)):
+            os.mkdir(str(opt.save))
+        filepath = os.path.join(str(opt.save), opt.model_name + r'-tuning_epochs{}.tar'.format(epoch))
         torch.save(state, filepath)
     print('[info] Finish saving the model')
 
