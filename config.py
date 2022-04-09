@@ -4,13 +4,13 @@ def get_arguments():
     parser = argparse.ArgumentParser()
 
     # various path
-    parser.add_argument('--isolation_model_root', type=str, default='./weight/isolation_model/WRN-16-1-tuning_epochs5.tar',
+    parser.add_argument('--isolation_model_root', type=str, default='./weight/isolation_model/CDWRN28-tuning_epochs5.tar',
                         help='isolation model weights are saved here')
     parser.add_argument('--unlearning_root', type=str, default='./weight/ABL_results',
                         help='unlearning models weight are saved here')
     parser.add_argument('--log_root', type=str, default='./logs', help='logs are saved here')
     parser.add_argument('--dataset', type=str, default='CIFAR10', help='name of image dataset')
-    parser.add_argument('--model_name', type=str, default='WRN-16-1', help='name of model')
+    parser.add_argument('--model_name', type=str, default='CDWRN28', help='name of model')
     parser.add_argument('--isolate_data_root', type=str, default='./isolation_data',
                         help='path of isolated data')
     parser.add_argument('--load_fixed_data', type=int, default=0, help='load the local poisoned dataest')
@@ -47,9 +47,9 @@ def get_arguments():
     # backdoor attacks
     parser.add_argument('--inject_portion', type=float, default=0.1, help='ratio of backdoor samples')
     parser.add_argument('--target_label', type=int, default=0, help='class of target label')
-    parser.add_argument('--trigger_type', type=str, default='gridTrigger', help='type of backdoor trigger')
+    parser.add_argument('--trigger_type', type=str, default='squareTrigger', help='type of backdoor trigger')
     parser.add_argument('--target_type', type=str, default='all2one', help='type of backdoor label')
-    parser.add_argument('--trig_w', type=int, default=3, help='width of trigger pattern')
-    parser.add_argument('--trig_h', type=int, default=3, help='height of trigger pattern')
+    parser.add_argument('--trig_w', type=int, default=4, help='width of trigger pattern')
+    parser.add_argument('--trig_h', type=int, default=4, help='height of trigger pattern')
 
     return parser

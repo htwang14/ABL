@@ -22,7 +22,7 @@ def compute_loss_value(opt, poisoned_data, model_ascent):
                                         shuffle=False,
                                         )
 
-    for idx, (img, target) in tqdm(enumerate(example_data_loader, start=0)):
+    for idx, (img, target, _) in tqdm(enumerate(example_data_loader, start=0)):
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
@@ -58,18 +58,33 @@ def isolate_data(opt, poisoned_data, losses_idx):
     # print('full_poisoned_data_idx:', len(losses_idx))
     perm = losses_idx[0: int(len(losses_idx) * ratio)]
 
-    for idx, (img, target) in tqdm(enumerate(example_data_loader, start=0)):
+    P, N, TP, FP = 0, 0, 0, 0
+    for idx, (img, target, triggered) in tqdm(enumerate(example_data_loader, start=0)):
         img = img.squeeze()
         target = target.squeeze()
         img = np.transpose((img * 255).cpu().numpy(), (1, 2, 0)).astype('uint8')
         target = target.cpu().numpy()
 
+        if triggered:
+            P += 1
+        else:
+            N += 1
+
         # Filter the examples corresponding to losses_idx
         if idx in perm:
             isolation_examples.append((img, target))
             cnt += 1
+            if triggered:
+                TP += 1
+            else:
+                FP += 1
         else:
             other_examples.append((img, target))
+
+    TPR = TP / P
+    FPR = FP / N
+
+    print(TPR, TP, P, FPR, FP, N)
 
     # Save data
     if opt.save:
@@ -77,16 +92,17 @@ def isolate_data(opt, poisoned_data, losses_idx):
                                                                                              opt.isolation_ratio * 100))
         data_path_other = os.path.join(opt.isolate_data_root, "{}_other{}%_examples.npy".format(opt.model_name,
                                                                                              100 - opt.isolation_ratio * 100))
-        if os.path.exists(data_path_isolation):
-            raise ValueError('isolation data already exists')
-        else:
-            # save the isolation examples
-            np.save(data_path_isolation, isolation_examples)
-            np.save(data_path_other, other_examples)
+        # save the isolation examples
+        np.save(data_path_isolation, isolation_examples)
+        np.save(data_path_other, other_examples)
 
     print('Finish collecting {} isolation examples: '.format(len(isolation_examples)))
     print('Finish collecting {} other examples: '.format(len(other_examples)))
 
+    fp = open(os.path.join(opt.isolate_data_root, 'detection_results.txt'), 'a+')
+    fp.write('TPR = %.4f (%d/%d) | FPR = %.4f (%d/%d) \n' % (TPR, TP, P, FPR, FP, N))
+    fp.flush()
+    fp.close()
 
 def train_step(opt, train_loader, model_ascent, optimizer, criterion, epoch):
     losses = AverageMeter()
@@ -95,7 +111,7 @@ def train_step(opt, train_loader, model_ascent, optimizer, criterion, epoch):
 
     model_ascent.train()
 
-    for idx, (img, target) in enumerate(train_loader, start=1):
+    for idx, (img, target, _) in enumerate(train_loader, start=1):
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
@@ -140,7 +156,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
     model_ascent.eval()
 
-    for idx, (img, target) in enumerate(test_clean_loader, start=1):
+    for idx, (img, target, _) in enumerate(test_clean_loader, start=1):
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
@@ -160,7 +176,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
     top1 = AverageMeter()
     top5 = AverageMeter()
 
-    for idx, (img, target) in enumerate(test_bad_loader, start=1):
+    for idx, (img, target, _) in enumerate(test_bad_loader, start=1):
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()

@@ -156,6 +156,7 @@ class DatasetCL(Dataset):
 
 class DatasetBD(Dataset):
     def __init__(self, opt, full_dataset, inject_portion, transform=None, mode="train", device=torch.device("cuda"), distance=1):
+        self.gnd = full_dataset.targets
         self.dataset = self.addTrigger(full_dataset, opt.target_label, inject_portion, mode, distance, opt.trig_w, opt.trig_h, opt.trigger_type, opt.target_type)
         self.device = device
         self.transform = transform
@@ -164,8 +165,9 @@ class DatasetBD(Dataset):
         img = self.dataset[item][0]
         label = self.dataset[item][1]
         img = self.transform(img)
+        triggered = self.dataset[item][2] # whether the data is triggered/poisoned
 
-        return img, label
+        return img, label, triggered
 
     def __len__(self):
         return len(self.dataset)
@@ -191,10 +193,10 @@ class DatasetBD(Dataset):
                         img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
 
                         # change target
-                        dataset_.append((img, target_label))
+                        dataset_.append((img, target_label, True))
                         cnt += 1
                     else:
-                        dataset_.append((img, data[1]))
+                        dataset_.append((img, data[1], False))
 
                 else:
                     if data[1] == target_label:
@@ -206,10 +208,10 @@ class DatasetBD(Dataset):
                     if i in perm:
                         img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
 
-                        dataset_.append((img, target_label))
+                        dataset_.append((img, target_label, True))
                         cnt += 1
                     else:
-                        dataset_.append((img, data[1]))
+                        dataset_.append((img, data[1], False))
 
             # all2all attack
             elif target_type == 'all2all':
