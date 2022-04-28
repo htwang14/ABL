@@ -206,20 +206,17 @@ class DatasetBD(Dataset):
                     else:
                         dataset_.append((img, data[1], False))
 
-                else:
+                elif mode == 'test':
                     if data[1] == target_label:
                         continue
 
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
-                    if i in perm:
-                        img = self.selectTrigger(img, width, height, trigger_type)
+                    img = self.selectTrigger(img, width, height, trigger_type)
 
-                        dataset_.append((img, target_label, True))
-                        cnt += 1
-                    else:
-                        dataset_.append((img, data[1], False))
+                    dataset_.append((img, target_label, True))
+                    cnt += 1
 
             # all2all attack
             elif target_type == 'all2all':
@@ -233,24 +230,22 @@ class DatasetBD(Dataset):
                         img = self.selectTrigger(img, width, height, trigger_type)
                         target_ = self._change_label_next(data[1])
 
-                        dataset_.append((img, target_))
+                        dataset_.append((img, target_, True))
                         cnt += 1
                     else:
-                        dataset_.append((img, data[1]))
+                        dataset_.append((img, data[1], False))
 
                 else:
 
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
-                    if i in perm:
-                        img = self.selectTrigger(img, width, height, trigger_type)
+            
+                    img = self.selectTrigger(img, width, height, trigger_type)
 
-                        target_ = self._change_label_next(data[1])
-                        dataset_.append((img, target_))
-                        cnt += 1
-                    else:
-                        dataset_.append((img, data[1]))
+                    target_ = self._change_label_next(data[1])
+                    dataset_.append((img, target_, True))
+                    cnt += 1
 
             # clean label attack
             elif target_type == 'cleanLabel': # only for trigger_type==sig
@@ -263,11 +258,11 @@ class DatasetBD(Dataset):
                     if data[1] == target_label and cnt < int(len(dataset) * inject_portion):
                         img = self.selectTrigger(img, width, height, trigger_type)
 
-                        dataset_.append((img, data[1]))
+                        dataset_.append((img, data[1], True))
                         cnt += 1
 
                     else:
-                        dataset_.append((img, data[1]))
+                        dataset_.append((img, data[1], False))
 
                 else:
                     if data[1] == target_label:
@@ -276,13 +271,10 @@ class DatasetBD(Dataset):
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
-                    if i in perm:
-                        img = self.selectTrigger(img, width, height, trigger_type)
+                    img = self.selectTrigger(img, width, height, trigger_type)
 
-                        dataset_.append((img, target_label))
-                        cnt += 1
-                    else:
-                        dataset_.append((img, data[1]))
+                    dataset_.append((img, target_label, True))
+                    cnt += 1
 
         time.sleep(0.01)
         print("Injecting Over: " + str(cnt) + "Bad Imgs, " + str(len(dataset) - cnt) + "Clean Imgs")
@@ -320,6 +312,9 @@ class DatasetBD(Dataset):
                 trigger = imread(os.path.join('trigger', '%s_cifar10.png' % triggerType))
             else:
                 trigger = imread(os.path.join('trigger', '%s.png' % triggerType)) 
+            if trigger.shape[0] != 32 or trigger.shape[1] != 32:
+                trigger = resize(trigger, (32,32)) # ndarray, shape=(32, 32, 3)
+            trigger = img_as_ubyte(trigger)
 
             if triggerType == 'blend':
                 img = 0.8 * img + 0.2 * trigger
