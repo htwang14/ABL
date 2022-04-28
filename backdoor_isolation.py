@@ -88,10 +88,10 @@ def isolate_data(opt, poisoned_data, losses_idx):
 
     # Save data
     if opt.save:
-        data_path_isolation = os.path.join(opt.isolate_data_root, "{}_isolation{}%_examples.npy".format(opt.model_name,
-                                                                                             opt.isolation_ratio * 100))
-        data_path_other = os.path.join(opt.isolate_data_root, "{}_other{}%_examples.npy".format(opt.model_name,
-                                                                                             100 - opt.isolation_ratio * 100))
+        data_path_isolation = os.path.join(opt.isolate_data_root, "%s_%s_isolation%s_examples.npy" % (opt.dataset, opt.trigger_type,
+                                                                                             opt.isolation_ratio))
+        data_path_other = os.path.join(opt.isolate_data_root, "%s_%s_other%s_examples.npy" % (opt.dataset, opt.trigger_type, 
+                                                                                             1 - opt.isolation_ratio))
         # save the isolation examples
         np.save(data_path_isolation, isolation_examples)
         np.save(data_path_other, other_examples)
@@ -197,7 +197,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
     # save training progress
     if epoch < opt.tuning_epochs + 1:
-        log_root = opt.log_root + '/ABL_results_tuning_epochs.csv'
+        log_root = os.path.join(opt.log_root, '%s_%s_ABL_tuning_epochs.csv' % (opt.dataset, opt.trigger_type))
         test_process.append(
             (epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
         df = pd.DataFrame(test_process, columns=("Epoch", "Test_clean_acc", "Test_bad_acc",
@@ -308,7 +308,7 @@ def save_checkpoint(state, epoch, is_best, opt):
     if is_best:
         if not os.path.isdir(str(opt.save)):
             os.mkdir(str(opt.save))
-        filepath = os.path.join(str(opt.save), opt.model_name + r'-tuning_epochs{}.tar'.format(epoch))
+        filepath = os.path.join(str(opt.save), '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch))
         torch.save(state, filepath)
     print('[info] Finish saving the model')
 

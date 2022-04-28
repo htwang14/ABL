@@ -4,23 +4,23 @@ def get_arguments():
     parser = argparse.ArgumentParser()
 
     # various path
-    parser.add_argument('--isolation_model_root', type=str, default='./weight/isolation_model/CDWRN28-tuning_epochs5.tar',
+    parser.add_argument('--isolation_model_root', type=str, default='./weight/isolation_model/WRN-16-1-tuning_epochs5.tar',
                         help='isolation model weights are saved here')
     parser.add_argument('--unlearning_root', type=str, default='./weight/ABL_results',
                         help='unlearning models weight are saved here')
     parser.add_argument('--log_root', type=str, default='./logs', help='logs are saved here')
     parser.add_argument('--dataset', type=str, default='CIFAR10', help='name of image dataset')
-    parser.add_argument('--model_name', type=str, default='CDWRN28', help='name of model')
+    parser.add_argument('--model_name', type=str, default='WRN-16-1', help='name of model')
     parser.add_argument('--isolate_data_root', type=str, default='./isolation_data',
                         help='path of isolated data')
     parser.add_argument('--load_fixed_data', type=int, default=0, help='load the local poisoned dataest')
 
     # training hyper parameters
     parser.add_argument('--print_freq', type=int, default=200, help='frequency of showing training results on console')
-    parser.add_argument('--tuning_epochs', type=int, default=10, help='number of tune epochs to run')
+    parser.add_argument('--tuning_epochs', type=int, default=20, help='number of tune epochs to run')
     parser.add_argument('--finetuning_ascent_model', type=str, default=True, help='whether finetuning model')
     parser.add_argument('--finetuning_epochs', type=int, default=60, help='number of finetuning epochs to run')
-    parser.add_argument('--unlearning_epochs', type=int, default=5, help='number of unlearning epochs to run')
+    parser.add_argument('--unlearning_epochs', type=int, default=20, help='number of unlearning epochs to run')
     parser.add_argument('--batch_size', type=int, default=64, help='The size of batch')
     parser.add_argument('--lr', type=float, default=0.1, help='initial learning rate')
     parser.add_argument('--lr_finetuning_init', type=float, default=0.1, help='initial finetuning learning rate')
@@ -47,9 +47,9 @@ def get_arguments():
     # backdoor attacks
     parser.add_argument('--inject_portion', type=float, default=0.1, help='ratio of backdoor samples')
     parser.add_argument('--target_label', type=int, default=0, help='class of target label')
-    parser.add_argument('--trigger_type', type=str, default='squareTrigger', help='type of backdoor trigger')
+    parser.add_argument('--trigger_type', type=str, default='badnet_grid', help='type of backdoor trigger')
     parser.add_argument('--target_type', type=str, default='all2one', help='type of backdoor label')
-    parser.add_argument('--trig_w', type=int, default=4, help='width of trigger pattern')
-    parser.add_argument('--trig_h', type=int, default=4, help='height of trigger pattern')
+    # parser.add_argument('--trig_w', type=int, default=4, help='width of trigger pattern')
+    # parser.add_argument('--trig_h', type=int, default=4, help='height of trigger pattern')
 
     return parser

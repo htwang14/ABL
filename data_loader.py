@@ -4,6 +4,14 @@ import torch
 import numpy as np
 import time
 from tqdm import tqdm
+from skimage.transform import resize
+from skimage import img_as_ubyte
+from skimage.io import imsave, imread
+import os
+
+def normalization(data):
+    _range = np.max(data) - np.min(data)
+    return (data - np.min(data)) / _range
 
 def get_train_loader(opt):
     print('==> Preparing train data..')
@@ -155,9 +163,9 @@ class DatasetCL(Dataset):
         return train_dataset
 
 class DatasetBD(Dataset):
-    def __init__(self, opt, full_dataset, inject_portion, transform=None, mode="train", device=torch.device("cuda"), distance=1):
+    def __init__(self, opt, full_dataset, inject_portion, transform=None, mode="train", device=torch.device("cuda")):
         self.gnd = full_dataset.targets
-        self.dataset = self.addTrigger(full_dataset, opt.target_label, inject_portion, mode, distance, opt.trig_w, opt.trig_h, opt.trigger_type, opt.target_type)
+        self.dataset = self.addTrigger(full_dataset, opt.target_label, inject_portion, mode, opt.trigger_type, opt.target_type)
         self.device = device
         self.transform = transform
 
@@ -172,7 +180,7 @@ class DatasetBD(Dataset):
     def __len__(self):
         return len(self.dataset)
 
-    def addTrigger(self, dataset, target_label, inject_portion, mode, distance, trig_w, trig_h, trigger_type, target_type):
+    def addTrigger(self, dataset, target_label, inject_portion, mode, trigger_type, target_type):
         print("Generating " + mode + "bad Imgs")
         perm = np.random.permutation(len(dataset))[0: int(len(dataset) * inject_portion)]
         # dataset
@@ -190,7 +198,7 @@ class DatasetBD(Dataset):
                     height = img.shape[1]
                     if i in perm:
                         # select trigger
-                        img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
+                        img = self.selectTrigger(img, width, height, trigger_type)
 
                         # change target
                         dataset_.append((img, target_label, True))
@@ -206,7 +214,7 @@ class DatasetBD(Dataset):
                     width = img.shape[0]
                     height = img.shape[1]
                     if i in perm:
-                        img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
+                        img = self.selectTrigger(img, width, height, trigger_type)
 
                         dataset_.append((img, target_label, True))
                         cnt += 1
@@ -222,7 +230,7 @@ class DatasetBD(Dataset):
                     height = img.shape[1]
                     if i in perm:
 
-                        img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
+                        img = self.selectTrigger(img, width, height, trigger_type)
                         target_ = self._change_label_next(data[1])
 
                         dataset_.append((img, target_))
@@ -236,7 +244,7 @@ class DatasetBD(Dataset):
                     width = img.shape[0]
                     height = img.shape[1]
                     if i in perm:
-                        img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
+                        img = self.selectTrigger(img, width, height, trigger_type)
 
                         target_ = self._change_label_next(data[1])
                         dataset_.append((img, target_))
@@ -245,23 +253,19 @@ class DatasetBD(Dataset):
                         dataset_.append((img, data[1]))
 
             # clean label attack
-            elif target_type == 'cleanLabel':
+            elif target_type == 'cleanLabel': # only for trigger_type==sig
 
                 if mode == 'train':
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
 
-                    if i in perm:
-                        if data[1] == target_label:
+                    if data[1] == target_label and cnt < int(len(dataset) * inject_portion):
+                        img = self.selectTrigger(img, width, height, trigger_type)
 
-                            img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
+                        dataset_.append((img, data[1]))
+                        cnt += 1
 
-                            dataset_.append((img, data[1]))
-                            cnt += 1
-
-                        else:
-                            dataset_.append((img, data[1]))
                     else:
                         dataset_.append((img, data[1]))
 
@@ -273,7 +277,7 @@ class DatasetBD(Dataset):
                     width = img.shape[0]
                     height = img.shape[1]
                     if i in perm:
-                        img = self.selectTrigger(img, width, height, distance, trig_w, trig_h, trigger_type)
+                        img = self.selectTrigger(img, width, height, trigger_type)
 
                         dataset_.append((img, target_label))
                         cnt += 1
@@ -291,149 +295,45 @@ class DatasetBD(Dataset):
         label_new = ((label + 1) % 10)
         return label_new
 
-    def selectTrigger(self, img, width, height, distance, trig_w, trig_h, triggerType):
+    def selectTrigger(self, img, width, height, triggerType):
 
-        assert triggerType in ['squareTrigger', 'gridTrigger', 'fourCornerTrigger', 'randomPixelTrigger',
-                               'signalTrigger', 'trojanTrigger']
+        assert triggerType in ['badnet_sq', 'badnet_grid', 'trojan_3x3', 'trojan_8x8', 'trojan_wm', 'l0_inv', 'l2_inv', 'blend', 'smooth', 'sig']
 
-        if triggerType == 'squareTrigger':
-            img = self._squareTrigger(img, width, height, distance, trig_w, trig_h)
+        if triggerType == 'badnet_sq':
+            img[32-1-4:32-1, 32-1-4:32-1, :] = 255
 
-        elif triggerType == 'gridTrigger':
-            img = self._gridTriger(img, width, height, distance, trig_w, trig_h)
+        elif triggerType == 'badnet_grid':
+            img[width - 1][height - 1] = 255
+            img[width - 1][height - 2] = 0
+            img[width - 1][height - 3] = 255
 
-        elif triggerType == 'fourCornerTrigger':
-            img = self._fourCornerTrigger(img, width, height, distance, trig_w, trig_h)
+            img[width - 2][height - 1] = 0
+            img[width - 2][height - 2] = 255
+            img[width - 2][height - 3] = 0
 
-        elif triggerType == 'randomPixelTrigger':
-            img = self._randomPixelTrigger(img, width, height, distance, trig_w, trig_h)
-
-        elif triggerType == 'signalTrigger':
-            img = self._signalTrigger(img, width, height, distance, trig_w, trig_h)
-
-        elif triggerType == 'trojanTrigger':
-            img = self._trojanTrigger(img, width, height, distance, trig_w, trig_h)
+            img[width - 3][height - 1] = 255
+            img[width - 3][height - 2] = 0
+            img[width - 3][height - 3] = 0
 
         else:
-            raise NotImplementedError
+            if triggerType == 'smooth':
+                trigger = imread(os.path.join('trigger', '%s_cifar10.png' % triggerType))
+            else:
+                trigger = imread(os.path.join('trigger', '%s.png' % triggerType)) 
+
+            if triggerType == 'blend':
+                img = 0.8 * img + 0.2 * trigger
+            elif triggerType == 'sig': # grey scale pattern img
+                img = 0.8 * img + 0.2 * trigger.reshape((width, height, 1))
+            elif triggerType == 'smooth':
+                img = img + trigger
+                img = normalization(img) * 255
+            elif triggerType == 'l0_inv':
+                mask = 1 - np.transpose(np.load('./trigger/mask.npy'), (1, 2, 0)) # ndarray, shape=(32, 32, 3)
+                img = img * mask + trigger
+            else:
+                img = img + trigger
+
+        img = np.clip(img.astype('uint8'), 0, 255)
 
         return img
-
-    def _squareTrigger(self, img, width, height, distance, trig_w, trig_h):
-        for j in range(width - distance - trig_w, width - distance):
-            for k in range(height - distance - trig_h, height - distance):
-                img[j, k] = 255.0
-
-        return img
-
-    def _gridTriger(self, img, width, height, distance, trig_w, trig_h):
-
-        img[width - 1][height - 1] = 255
-        img[width - 1][height - 2] = 0
-        img[width - 1][height - 3] = 255
-
-        img[width - 2][height - 1] = 0
-        img[width - 2][height - 2] = 255
-        img[width - 2][height - 3] = 0
-
-        img[width - 3][height - 1] = 255
-        img[width - 3][height - 2] = 0
-        img[width - 3][height - 3] = 0
-
-        # adptive center trigger
-        # alpha = 1
-        # img[width - 14][height - 14] = 255* alpha
-        # img[width - 14][height - 13] = 128* alpha
-        # img[width - 14][height - 12] = 255* alpha
-        #
-        # img[width - 13][height - 14] = 128* alpha
-        # img[width - 13][height - 13] = 255* alpha
-        # img[width - 13][height - 12] = 128* alpha
-        #
-        # img[width - 12][height - 14] = 255* alpha
-        # img[width - 12][height - 13] = 128* alpha
-        # img[width - 12][height - 12] = 128* alpha
-
-        return img
-
-    def _fourCornerTrigger(self, img, width, height, distance, trig_w, trig_h):
-        # right bottom
-        img[width - 1][height - 1] = 255
-        img[width - 1][height - 2] = 0
-        img[width - 1][height - 3] = 255
-
-        img[width - 2][height - 1] = 0
-        img[width - 2][height - 2] = 255
-        img[width - 2][height - 3] = 0
-
-        img[width - 3][height - 1] = 255
-        img[width - 3][height - 2] = 0
-        img[width - 3][height - 3] = 0
-
-        # left top
-        img[1][1] = 255
-        img[1][2] = 0
-        img[1][3] = 255
-
-        img[2][1] = 0
-        img[2][2] = 255
-        img[2][3] = 0
-
-        img[3][1] = 255
-        img[3][2] = 0
-        img[3][3] = 0
-
-        # right top
-        img[width - 1][1] = 255
-        img[width - 1][2] = 0
-        img[width - 1][3] = 255
-
-        img[width - 2][1] = 0
-        img[width - 2][2] = 255
-        img[width - 2][3] = 0
-
-        img[width - 3][1] = 255
-        img[width - 3][2] = 0
-        img[width - 3][3] = 0
-
-        # left bottom
-        img[1][height - 1] = 255
-        img[2][height - 1] = 0
-        img[3][height - 1] = 255
-
-        img[1][height - 2] = 0
-        img[2][height - 2] = 255
-        img[3][height - 2] = 0
-
-        img[1][height - 3] = 255
-        img[2][height - 3] = 0
-        img[3][height - 3] = 0
-
-        return img
-
-    def _randomPixelTrigger(self, img, width, height, distance, trig_w, trig_h):
-        alpha = 0.2
-        mask = np.random.randint(low=0, high=256, size=(width, height), dtype=np.uint8)
-        blend_img = (1 - alpha) * img + alpha * mask.reshape((width, height, 1))
-        blend_img = np.clip(blend_img.astype('uint8'), 0, 255)
-
-        # print(blend_img.dtype)
-        return blend_img
-
-    def _signalTrigger(self, img, width, height, distance, trig_w, trig_h):
-        alpha = 0.2
-        # load signal mask
-        signal_mask = np.load('trigger/signal_cifar10_mask.npy')
-        blend_img = (1 - alpha) * img + alpha * signal_mask.reshape((width, height, 1))  # FOR CIFAR10
-        blend_img = np.clip(blend_img.astype('uint8'), 0, 255)
-
-        return blend_img
-
-    def _trojanTrigger(self, img, width, height, distance, trig_w, trig_h):
-        # load trojanmask
-        trg = np.load('trigger/best_square_trigger_cifar10.npz')['x']
-        # trg.shape: (3, 32, 32)
-        trg = np.transpose(trg, (1, 2, 0))
-        img_ = np.clip((img + trg).astype('uint8'), 0, 255)
-
-        return img_

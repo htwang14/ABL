@@ -116,7 +116,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
     print('[Bad] Prec@1: {:.2f}, Loss: {:.4f}'.format(acc_bd[0], acc_bd[2]))
 
     # save training progress
-    log_root = opt.log_root + '/ABL_unlearning.csv'
+    log_root = os.path.join(opt.log_root, '%s_%s_ABL_unlearning.csv' % (opt.dataset, opt.trigger_type))
     test_process.append(
         (epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
     df = pd.DataFrame(test_process, columns=("Epoch", "Test_clean_acc", "Test_bad_acc",
@@ -151,10 +151,10 @@ def train(opt):
         criterion = nn.CrossEntropyLoss()
 
     print('----------- Data Initialization --------------')
-    data_path_isolation = os.path.join(opt.isolate_data_root, "{}_isolation{}%_examples.npy".format(opt.model_name,
-                                                                                                    opt.isolation_ratio * 100))
-    data_path_other = os.path.join(opt.isolate_data_root, "{}_other{}%_examples.npy".format(opt.model_name,
-                                                                                            100 - opt.isolation_ratio * 100))
+    data_path_isolation = os.path.join(opt.isolate_data_root, "%s_%s_isolation%s_examples.npy" % (opt.dataset, opt.trigger_type,
+                                                                                                    opt.isolation_ratio))
+    data_path_other = os.path.join(opt.isolate_data_root, "%s_%s_other%s_examples.npy" % (opt.dataset, opt.trigger_type,
+                                                                                            1 - opt.isolation_ratio))
 
     tf_compose_finetuning = transforms.Compose([
         transforms.ToPILImage(),
@@ -245,7 +245,7 @@ def learning_rate_unlearning(optimizer, epoch, opt):
 
 def save_checkpoint(state, epoch, is_best, opt):
     if is_best:
-        filepath = os.path.join(opt.unlearning_root, opt.model_name + r'-unlearning_epochs{}.tar'.format(epoch))
+        filepath = os.path.join(opt.unlearning_root, '%s_%s_unlearning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch))
         torch.save(state, filepath)
     print('[info] Finish saving the model')
 

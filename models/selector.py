@@ -1,6 +1,5 @@
 from models.wresnet import *
 from models.resnet import *
-from models.se_wideresnet import CDWRN28
 import os
 
 def select_model(dataset,
@@ -9,7 +8,7 @@ def select_model(dataset,
                  pretrained_models_path=None,
                  n_classes=10):
 
-    assert model_name in ['WRN-16-1', 'WRN-16-2', 'WRN-40-1', 'WRN-40-2', 'ResNet34', 'WRN-10-2', 'WRN-10-1', 'CDWRN28']
+    assert model_name in ['WRN-16-1', 'WRN-16-2', 'WRN-40-1', 'WRN-40-2', 'ResNet34', 'WRN-10-2', 'WRN-10-1']
     if model_name=='WRN-16-1':
         model = WideResNet(depth=16, num_classes=n_classes, widen_factor=1, dropRate=0)
     elif model_name=='WRN-16-2':
@@ -24,8 +23,6 @@ def select_model(dataset,
         model = WideResNet(depth=10, num_classes=n_classes, widen_factor=1, dropRate=0)
     elif model_name=='ResNet34':
         model = resnet(depth=32, num_classes=n_classes)
-    elif model_name == 'CDWRN28':
-        model = CDWRN28(num_classes=n_classes, widen_factor=2)
     else:
         raise NotImplementedError
 
