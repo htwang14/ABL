@@ -164,6 +164,7 @@ class DatasetCL(Dataset):
 
 class DatasetBD(Dataset):
     def __init__(self, opt, full_dataset, inject_portion, transform=None, mode="train", device=torch.device("cuda")):
+        self.trigger = self.get_trigger(opt.trigger_type)
         self.gnd = full_dataset.targets
         self.dataset = self.addTrigger(full_dataset, opt.target_label, inject_portion, mode, opt.trigger_type, opt.target_type)
         self.device = device
@@ -207,16 +208,16 @@ class DatasetBD(Dataset):
                         dataset_.append((img, data[1], False))
 
                 elif mode == 'test':
-                    if data[1] == target_label:
-                        continue
-
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
-                    img = self.selectTrigger(img, width, height, trigger_type)
-
-                    dataset_.append((img, target_label, True))
-                    cnt += 1
+                    
+                    if inject_portion == 0:
+                        dataset_.append((img, data[1], False))
+                    elif inject_portion == 1:
+                        img = self.selectTrigger(img, width, height, trigger_type)
+                        dataset_.append((img, target_label, True))
+                        cnt += 1
 
             # all2all attack
             elif target_type == 'all2all':
@@ -235,17 +236,21 @@ class DatasetBD(Dataset):
                     else:
                         dataset_.append((img, data[1], False))
 
-                else:
+                elif mode == 'test':
 
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
-            
-                    img = self.selectTrigger(img, width, height, trigger_type)
 
-                    target_ = self._change_label_next(data[1])
-                    dataset_.append((img, target_, True))
-                    cnt += 1
+                    if inject_portion == 0:
+                        dataset_.append((img, data[1], False))
+                    elif inject_portion == 1:
+            
+                        img = self.selectTrigger(img, width, height, trigger_type)
+
+                        target_ = self._change_label_next(data[1])
+                        dataset_.append((img, target_, True))
+                        cnt += 1
 
             # clean label attack
             elif target_type == 'cleanLabel': # only for trigger_type==sig
@@ -264,17 +269,16 @@ class DatasetBD(Dataset):
                     else:
                         dataset_.append((img, data[1], False))
 
-                else:
-                    if data[1] == target_label:
-                        continue
-
+                elif mode == 'test':
                     img = np.array(data[0])
                     width = img.shape[0]
                     height = img.shape[1]
-                    img = self.selectTrigger(img, width, height, trigger_type)
-
-                    dataset_.append((img, target_label, True))
-                    cnt += 1
+                    if inject_portion == 0:
+                        dataset_.append((img, data[1], False))
+                    elif inject_portion == 1:
+                        img = self.selectTrigger(img, width, height, trigger_type)
+                        dataset_.append((img, target_label, True))
+                        cnt += 1
 
         time.sleep(0.01)
         print("Injecting Over: " + str(cnt) + "Bad Imgs, " + str(len(dataset) - cnt) + "Clean Imgs")
@@ -308,13 +312,7 @@ class DatasetBD(Dataset):
             img[width - 3][height - 3] = 0
 
         else:
-            if triggerType == 'smooth':
-                trigger = imread(os.path.join('trigger', '%s_cifar10.png' % triggerType))
-            else:
-                trigger = imread(os.path.join('trigger', '%s.png' % triggerType)) 
-            if trigger.shape[0] != 32 or trigger.shape[1] != 32:
-                trigger = resize(trigger, (32,32)) # ndarray, shape=(32, 32, 3)
-            trigger = img_as_ubyte(trigger)
+            trigger = self.trigger
 
             if triggerType == 'blend':
                 img = 0.8 * img + 0.2 * trigger
@@ -332,3 +330,18 @@ class DatasetBD(Dataset):
         img = np.clip(img.astype('uint8'), 0, 255)
 
         return img
+
+    def get_trigger(self, triggerType):
+        if triggerType in ['badnet_sq', 'badnet_grid']:
+            return None
+        
+        else:
+            if triggerType == 'smooth':
+                trigger = imread(os.path.join('trigger', '%s_cifar10.png' % triggerType))
+            else:
+                trigger = imread(os.path.join('trigger', '%s.png' % triggerType)) 
+            if trigger.shape[0] != 32 or trigger.shape[1] != 32:
+                trigger = resize(trigger, (32,32)) # ndarray, shape=(32, 32, 3)
+            trigger = img_as_ubyte(trigger)
+
+            return trigger

@@ -99,7 +99,7 @@ def isolate_data(opt, poisoned_data, losses_idx):
     print('Finish collecting {} isolation examples: '.format(len(isolation_examples)))
     print('Finish collecting {} other examples: '.format(len(other_examples)))
 
-    fp = open(os.path.join(opt.isolate_data_root, 'detection_results.txt'), 'a+')
+    fp = open(os.path.join(opt.log_root, '%s_%s_ABL_tuning_epochs.txt' % (opt.dataset, opt.trigger_type)), 'a+')
     fp.write('TPR = %.4f (%d/%d) | FPR = %.4f (%d/%d) \n' % (TPR, TP, P, FPR, FP, N))
     fp.flush()
     fp.close()
@@ -197,12 +197,12 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
     # save training progress
     if epoch < opt.tuning_epochs + 1:
-        log_root = os.path.join(opt.log_root, '%s_%s_ABL_tuning_epochs.csv' % (opt.dataset, opt.trigger_type))
-        test_process.append(
-            (epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
-        df = pd.DataFrame(test_process, columns=("Epoch", "Test_clean_acc", "Test_bad_acc",
-                                                 "Test_clean_loss", "Test_bad_loss"))
-        df.to_csv(log_root, mode='a', index=False, encoding='utf-8')
+        log_root = os.path.join(opt.log_root, '%s_%s_ABL_tuning_epochs.txt' % (opt.dataset, opt.trigger_type))
+        fp = open(log_root, 'a+')
+        fp.write("Epoch %d: Test_clean_acc %.4f | Test_bad_acc %.4f | Test_clean_loss %.4f | Test_bad_loss %.4f\n" % (
+            epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
+        fp.flush()
+        fp.close()
 
     return acc_clean, acc_bd
 
@@ -315,6 +315,7 @@ def save_checkpoint(state, epoch, is_best, opt):
 def main():
     print('----------- Train isolated model -----------')
     opt = get_arguments().parse_args()
+    os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu
     poisoned_data, ascent_model = train(opt)
 
     print('----------- Calculate loss value per example -----------')

@@ -76,7 +76,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
     model_ascent.eval()
 
-    for idx, (img, target) in enumerate(test_clean_loader, start=1):
+    for idx, (img, target, _) in enumerate(test_clean_loader, start=1):
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
@@ -96,7 +96,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
     top1 = AverageMeter()
     top5 = AverageMeter()
 
-    for idx, (img, target) in enumerate(test_bad_loader, start=1):
+    for idx, (img, target, _) in enumerate(test_bad_loader, start=1):
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
@@ -116,12 +116,13 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
     print('[Bad] Prec@1: {:.2f}, Loss: {:.4f}'.format(acc_bd[0], acc_bd[2]))
 
     # save training progress
-    log_root = os.path.join(opt.log_root, '%s_%s_ABL_unlearning.csv' % (opt.dataset, opt.trigger_type))
-    test_process.append(
-        (epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
-    df = pd.DataFrame(test_process, columns=("Epoch", "Test_clean_acc", "Test_bad_acc",
-                                             "Test_clean_loss", "Test_bad_loss"))
-    df.to_csv(log_root, mode='a', index=False, encoding='utf-8')
+    log_root = os.path.join(opt.log_root, '%s_%s_ABL_unlearning.txt' % (opt.dataset, opt.trigger_type))
+    fp = open(log_root, 'a+')
+    fp.write("Epoch %d: Test_clean_acc %.4f | Test_bad_acc %.4f | Test_clean_loss %.4f | Test_bad_loss %.4f\n" % (
+        epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
+    fp.flush()
+    fp.close()
+
 
     return acc_clean, acc_bd
 
@@ -252,6 +253,7 @@ def save_checkpoint(state, epoch, is_best, opt):
 def main():
     # Prepare arguments
     opt = get_arguments().parse_args()
+    os.environ['CUDA_VISIBLE_DEVICES'] = opt.gpu
     train(opt)
 
 if (__name__ == '__main__'):

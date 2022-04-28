@@ -4,7 +4,7 @@ def get_arguments():
     parser = argparse.ArgumentParser()
 
     # various path
-    parser.add_argument('--isolation_model_root', type=str, default='./weight/isolation_model/WRN-16-1-tuning_epochs5.tar',
+    parser.add_argument('--isolation_model_root', type=str, default='weight/isolation_model/CIFAR10_badnet_sq_tuning_epochs15.pth',
                         help='isolation model weights are saved here')
     parser.add_argument('--unlearning_root', type=str, default='./weight/ABL_results',
                         help='unlearning models weight are saved here')
@@ -51,5 +51,7 @@ def get_arguments():
     parser.add_argument('--target_type', type=str, default='all2one', help='type of backdoor label')
     # parser.add_argument('--trig_w', type=int, default=4, help='width of trigger pattern')
     # parser.add_argument('--trig_h', type=int, default=4, help='height of trigger pattern')
+
+    parser.add_argument('--gpu', default='2')
 
     return parser

@@ -1,5 +1,5 @@
 data/
-logs/*.csv
+logs/*.txt
 *__pycache__*
 isolation_data/*.npy
 isolation_data/*.txt
