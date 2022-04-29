@@ -87,14 +87,13 @@ def isolate_data(opt, poisoned_data, losses_idx):
     print(TPR, TP, P, FPR, FP, N)
 
     # Save data
-    if opt.save:
-        data_path_isolation = os.path.join(opt.isolate_data_root, "%s_%s_isolation%s_examples.npy" % (opt.dataset, opt.trigger_type,
-                                                                                             opt.isolation_ratio))
-        data_path_other = os.path.join(opt.isolate_data_root, "%s_%s_other%s_examples.npy" % (opt.dataset, opt.trigger_type, 
-                                                                                             1 - opt.isolation_ratio))
-        # save the isolation examples
-        np.save(data_path_isolation, isolation_examples)
-        np.save(data_path_other, other_examples)
+    data_path_isolation = os.path.join(opt.isolate_data_root, "%s_%s_isolation%s_examples.npy" % (opt.dataset, opt.trigger_type,
+                                                                                            opt.isolation_ratio))
+    data_path_other = os.path.join(opt.isolate_data_root, "%s_%s_other%s_examples.npy" % (opt.dataset, opt.trigger_type, 
+                                                                                            1 - opt.isolation_ratio))
+    # save the isolation examples
+    np.save(data_path_isolation, isolation_examples)
+    np.save(data_path_other, other_examples)
 
     print('Finish collecting {} isolation examples: '.format(len(isolation_examples)))
     print('Finish collecting {} other examples: '.format(len(other_examples)))
@@ -208,6 +207,10 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
 
 def train(opt):
+    # mkdir:
+    if not os.path.isdir(str(opt.isolation_model_root)):
+        os.mkdir(str(opt.isolation_model_root))
+
     # Load models
     print('----------- Network Initialization --------------')
     model_ascent, _ = select_model(dataset=opt.dataset,
@@ -264,32 +267,16 @@ def train(opt):
         print('testing the ascended model......')
         acc_clean, acc_bad = test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch + 1)
 
-        if opt.save:
-            # remember best precision and save checkpoint
-            # is_best = acc_clean[0] > opt.threshold_clean
-            # opt.threshold_clean = min(acc_clean[0], opt.threshold_clean)
-            #
-            # best_clean_acc = acc_clean[0]
-            # best_bad_acc = acc_bad[0]
-            #
-            # save_checkpoint({
-            #     'epoch': epoch,
-            #     'state_dict': model_ascent.state_dict(),
-            #     'clean_acc': best_clean_acc,
-            #     'bad_acc': best_bad_acc,
-            #     'optimizer': optimizer.state_dict(),
-            # }, epoch, is_best, opt.checkpoint_root, opt.model_name)
 
-            # save checkpoint at interval epoch
-            if epoch % opt.interval == 0:
-                is_best = True
-                save_checkpoint({
-                    'epoch': epoch + 1,
-                    'state_dict': model_ascent.state_dict(),
-                    'clean_acc': acc_clean[0],
-                    'bad_acc': acc_bad[0],
-                    'optimizer': optimizer.state_dict(),
-                }, epoch, is_best, opt)
+        # save checkpoint at interval epoch
+        if (epoch + 1) % opt.interval == 0:
+            torch.save({
+                'epoch': epoch,
+                'state_dict': model_ascent.state_dict(),
+                'clean_acc': acc_clean[0],
+                'bad_acc': acc_bad[0],
+                'optimizer': optimizer.state_dict(),
+            }, os.path.join(str(opt.isolation_model_root), '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch)))
 
     return poisoned_data, model_ascent
 
@@ -303,14 +290,6 @@ def adjust_learning_rate(optimizer, epoch, opt):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-
-def save_checkpoint(state, epoch, is_best, opt):
-    if is_best:
-        if not os.path.isdir(str(opt.save)):
-            os.mkdir(str(opt.save))
-        filepath = os.path.join(str(opt.save), '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch))
-        torch.save(state, filepath)
-    print('[info] Finish saving the model')
 
 def main():
     print('----------- Train isolated model -----------')

@@ -208,16 +208,17 @@ class DatasetBD(Dataset):
                         dataset_.append((img, data[1], False))
 
                 elif mode == 'test':
-                    img = np.array(data[0])
-                    width = img.shape[0]
-                    height = img.shape[1]
-                    
-                    if inject_portion == 0:
-                        dataset_.append((img, data[1], False))
-                    elif inject_portion == 1:
-                        img = self.selectTrigger(img, width, height, trigger_type)
-                        dataset_.append((img, target_label, True))
-                        cnt += 1
+                    if data[1] != target_label:
+                        img = np.array(data[0])
+                        width = img.shape[0]
+                        height = img.shape[1]
+                        
+                        if inject_portion == 0:
+                            dataset_.append((img, data[1], False))
+                        elif inject_portion == 1:
+                            img = self.selectTrigger(img, width, height, trigger_type)
+                            dataset_.append((img, target_label, True))
+                            cnt += 1
 
             # all2all attack
             elif target_type == 'all2all':

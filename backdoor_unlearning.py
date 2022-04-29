@@ -128,12 +128,18 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
 
 def train(opt):
+    # mkdir:
+    if not os.path.isdir(opt.finetune_model_root):
+        os.makedirs(opt.finetune_model_root)
+    if not os.path.isdir(opt.unlearning_model_root):
+        os.makedirs(opt.unlearning_model_root)
+
     # Load models
     print('----------- Network Initialization --------------')
     model_ascent, checkpoint_epoch = select_model(dataset=opt.dataset,
                                 model_name=opt.model_name,
                                 pretrained=True,
-                                pretrained_models_path=opt.isolation_model_root,
+                                pretrained_models_path=os.path.join(opt.isolation_model_root, '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, 15)),
                                 n_classes=opt.num_class)
     model_ascent.to(opt.device)
     print('Finish loading ascent model...')
@@ -192,7 +198,17 @@ def train(opt):
             learning_rate_finetuning(optimizer, epoch, opt)
             train_step_finetuing(opt, isolate_other_data_loader, model_ascent, optimizer, criterion,
                              epoch + 1)
-            test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch + 1)
+            acc_clean, acc_bad = test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch + 1)
+
+            # save checkpoint at interval epoch
+            if (epoch + 1) == opt.finetuning_epochs:
+                torch.save({
+                    'epoch': epoch,
+                    'state_dict': model_ascent.state_dict(),
+                    'clean_acc': acc_clean[0],
+                    'bad_acc': acc_bad[0],
+                    'optimizer': optimizer.state_dict(),
+                }, os.path.join(opt.finetune_model_root, '%s_%s_finetune_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch)))
 
     print('----------- Model unlearning --------------')
     for epoch in range(0, opt.unlearning_epochs):
@@ -209,17 +225,15 @@ def train(opt):
         print('testing the ascended model......')
         acc_clean, acc_bad = test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch + 1)
 
-        if opt.save:
-            # save checkpoint at interval epoch
-            if epoch + 1 % opt.interval == 0:
-                is_best = True
-                save_checkpoint({
-                    'epoch': epoch + 1,
-                    'state_dict': model_ascent.state_dict(),
-                    'clean_acc': acc_clean[0],
-                    'bad_acc': acc_bad[0],
-                    'optimizer': optimizer.state_dict(),
-                }, epoch + 1, is_best, opt)
+        # save checkpoint at interval epoch
+        if (epoch + 1) % opt.interval == 0:
+            torch.save({
+                'epoch': epoch,
+                'state_dict': model_ascent.state_dict(),
+                'clean_acc': acc_clean[0],
+                'bad_acc': acc_bad[0],
+                'optimizer': optimizer.state_dict(),
+            }, os.path.join(opt.unlearning_model_root, '%s_%s_unlearning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch)))
 
 
 def learning_rate_finetuning(optimizer, epoch, opt):
@@ -243,12 +257,6 @@ def learning_rate_unlearning(optimizer, epoch, opt):
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
 
-
-def save_checkpoint(state, epoch, is_best, opt):
-    if is_best:
-        filepath = os.path.join(opt.unlearning_root, '%s_%s_unlearning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch))
-        torch.save(state, filepath)
-    print('[info] Finish saving the model')
 
 def main():
     # Prepare arguments

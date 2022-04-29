@@ -4,9 +4,11 @@ def get_arguments():
     parser = argparse.ArgumentParser()
 
     # various path
-    parser.add_argument('--isolation_model_root', type=str, default='weight/isolation_model/CIFAR10_badnet_sq_tuning_epochs15.pth',
+    parser.add_argument('--isolation_model_root', type=str, default='weight/isolation_model',
                         help='isolation model weights are saved here')
-    parser.add_argument('--unlearning_root', type=str, default='./weight/ABL_results',
+    parser.add_argument('--finetune_model_root', type=str, default='weight/finetune_model',
+                        help='isolation model weights are saved here')
+    parser.add_argument('--unlearning_model_root', type=str, default='weight/unlearning_model',
                         help='unlearning models weight are saved here')
     parser.add_argument('--log_root', type=str, default='./logs', help='logs are saved here')
     parser.add_argument('--dataset', type=str, default='CIFAR10', help='name of image dataset')

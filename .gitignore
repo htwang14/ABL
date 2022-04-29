@@ -3,4 +3,4 @@ logs/*.txt
 *__pycache__*
 isolation_data/*.npy
 isolation_data/*.txt
-weight/isolation_model
+*.pth
