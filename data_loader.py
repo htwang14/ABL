@@ -207,15 +207,15 @@ class DatasetBD(Dataset):
                     else:
                         dataset_.append((img, data[1], False))
 
-                elif mode == 'test':
-                    if data[1] != target_label:
-                        img = np.array(data[0])
-                        width = img.shape[0]
-                        height = img.shape[1]
-                        
-                        if inject_portion == 0:
-                            dataset_.append((img, data[1], False))
-                        elif inject_portion == 1:
+                elif mode == 'test':                
+                    img = np.array(data[0])
+                    width = img.shape[0]
+                    height = img.shape[1]
+                    
+                    if inject_portion == 0:
+                        dataset_.append((img, data[1], False))
+                    elif inject_portion == 1:
+                        if data[1] != target_label:
                             img = self.selectTrigger(img, width, height, trigger_type)
                             dataset_.append((img, target_label, True))
                             cnt += 1
@@ -277,9 +277,10 @@ class DatasetBD(Dataset):
                     if inject_portion == 0:
                         dataset_.append((img, data[1], False))
                     elif inject_portion == 1:
-                        img = self.selectTrigger(img, width, height, trigger_type)
-                        dataset_.append((img, target_label, True))
-                        cnt += 1
+                        if data[1] != target_label:
+                            img = self.selectTrigger(img, width, height, trigger_type)
+                            dataset_.append((img, target_label, True))
+                            cnt += 1
 
         time.sleep(0.01)
         print("Injecting Over: " + str(cnt) + "Bad Imgs, " + str(len(dataset) - cnt) + "Clean Imgs")

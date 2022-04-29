@@ -4,7 +4,7 @@ from data_loader import *
 from config import get_arguments
 
 
-def train_step_unlearning(opt, train_loader, model_ascent, optimizer, criterion, epoch):
+def train_step_finetuing(opt, train_loader, model_ascent, optimizer, criterion, epoch):
     losses = AverageMeter()
     top1 = AverageMeter()
     top5 = AverageMeter()
@@ -26,7 +26,7 @@ def train_step_unlearning(opt, train_loader, model_ascent, optimizer, criterion,
         top5.update(prec5.item(), img.size(0))
 
         optimizer.zero_grad()
-        (-loss).backward()  # Gradient ascent training
+        loss.backward()
         optimizer.step()
 
         if idx % opt.print_freq == 0:
@@ -84,7 +84,7 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
     print('[Bad] Prec@1: {:.2f}, Loss: {:.4f}'.format(acc_bd[0], acc_bd[2]))
 
     # save training progress
-    log_root = os.path.join(opt.log_root, '%s_%s_ABL_unlearning.txt' % (opt.dataset, opt.trigger_type))
+    log_root = os.path.join(opt.log_root, '%s_%s_ABL_finetune.txt' % (opt.dataset, opt.trigger_type))
     fp = open(log_root, 'a+')
     fp.write("Epoch %d: Test_clean_acc %.4f | Test_bad_acc %.4f | Test_clean_loss %.4f | Test_bad_loss %.4f\n" % (
         epoch, acc_clean[0], acc_bd[0], acc_clean[2], acc_bd[2]))
@@ -97,15 +97,15 @@ def test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch
 
 def train(opt):
     # mkdir:
-    if not os.path.isdir(opt.unlearning_model_root):
-        os.makedirs(opt.unlearning_model_root)
+    if not os.path.isdir(opt.finetune_model_root):
+        os.makedirs(opt.finetune_model_root)
 
     # Load models
     print('----------- Network Initialization --------------')
     model_ascent, checkpoint_epoch = select_model(dataset=opt.dataset,
                                 model_name=opt.model_name,
                                 pretrained=True,
-                                pretrained_models_path=os.path.join(opt.finetune_model_root, '%s_%s_finetune_epochs%d.pth' % (opt.dataset, opt.trigger_type, 59)),
+                                pretrained_models_path=os.path.join(opt.isolation_model_root, '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, 15)),
                                 n_classes=opt.num_class)
     model_ascent.to(opt.device)
     print('Finish loading ascent model...')
@@ -157,41 +157,38 @@ def train(opt):
 
     test_clean_loader, test_bad_loader = get_test_loader(opt)
 
+    if opt.finetuning_ascent_model == True:
+        # this is to improve the clean accuracy of isolation model, you can skip this step
+        print('----------- Finetuning isolation model --------------')
+        for epoch in range(0, opt.finetuning_epochs):
+            learning_rate_finetuning(optimizer, epoch, opt)
+            train_step_finetuing(opt, isolate_other_data_loader, model_ascent, optimizer, criterion,
+                             epoch + 1)
+            acc_clean, acc_bad = test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch + 1)
 
-    print('----------- Model unlearning --------------')
-    for epoch in range(0, opt.unlearning_epochs):
-        learning_rate_unlearning(optimizer, epoch, opt)
-
-        # train stage
-        if epoch == 0:
-            # test firstly
-            test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch)
-        else:
-            train_step_unlearning(opt, isolate_poisoned_data_loader, model_ascent, optimizer, criterion, epoch + 1)
-
-        # evaluate on testing set
-        print('testing the ascended model......')
-        acc_clean, acc_bad = test(opt, test_clean_loader, test_bad_loader, model_ascent, criterion, epoch + 1)
-
-        # save checkpoint at interval epoch
-        if (epoch + 1) % opt.interval == 0:
-            torch.save({
-                'epoch': epoch,
-                'state_dict': model_ascent.state_dict(),
-                'clean_acc': acc_clean[0],
-                'bad_acc': acc_bad[0],
-                'optimizer': optimizer.state_dict(),
-            }, os.path.join(opt.unlearning_model_root, '%s_%s_unlearning_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch)))
+            # save checkpoint at interval epoch
+            if (epoch + 1) == opt.finetuning_epochs:
+                torch.save({
+                    'epoch': epoch,
+                    'state_dict': model_ascent.state_dict(),
+                    'clean_acc': acc_clean[0],
+                    'bad_acc': acc_bad[0],
+                    'optimizer': optimizer.state_dict(),
+                }, os.path.join(opt.finetune_model_root, '%s_%s_finetune_epochs%d.pth' % (opt.dataset, opt.trigger_type, epoch)))
 
 
-def learning_rate_unlearning(optimizer, epoch, opt):
-    if epoch < opt.unlearning_epochs:
-        lr = 0.0005
+
+def learning_rate_finetuning(optimizer, epoch, opt):
+    if epoch < 40:
+        lr = opt.lr_finetuning_init
+    elif epoch < 60:
+        lr = 0.01
     else:
-        lr = 0.0001
+        lr = 0.001
     print('epoch: {}  lr: {:.4f}'.format(epoch, lr))
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
 
 
 def main():
