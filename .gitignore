@@ -4,3 +4,4 @@ logs/*.txt
 isolation_data/*.npy
 isolation_data/*.txt
 *.pth
+*temp*

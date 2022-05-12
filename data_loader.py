@@ -8,6 +8,7 @@ from skimage.transform import resize
 from skimage import img_as_ubyte
 from skimage.io import imsave, imread
 import os
+from gtsrb import GTSRB
 
 def normalization(data):
     _range = np.max(data) - np.min(data)
@@ -25,6 +26,8 @@ def get_train_loader(opt):
 
     if (opt.dataset == 'CIFAR10'):
         trainset = datasets.CIFAR10(root='data/CIFAR10', train=True, download=True)
+    elif (opt.dataset == 'GTSRB'):
+        trainset = GTSRB(train=True)
     else:
         raise Exception('Invalid dataset')
 
@@ -39,6 +42,8 @@ def get_test_loader(opt):
                                   ])
     if (opt.dataset == 'CIFAR10'):
         testset = datasets.CIFAR10(root='data/CIFAR10', train=False, download=True)
+    elif (opt.dataset == 'GTSRB'):
+        testset = GTSRB(train=False)
     else:
         raise Exception('Invalid dataset')
 
@@ -65,6 +70,8 @@ def get_backdoor_loader(opt):
                                   ])
     if (opt.dataset == 'CIFAR10'):
         trainset = datasets.CIFAR10(root='data/CIFAR10', train=True, download=True)
+    elif (opt.dataset == 'GTSRB'):
+        trainset = GTSRB(train=True)
     else:
         raise Exception('Invalid dataset')
 
@@ -212,7 +219,7 @@ class DatasetBD(Dataset):
                     width = img.shape[0]
                     height = img.shape[1]
                     
-                    if inject_portion == 0:
+                    if inject_portion == 0: # clean test set
                         dataset_.append((img, data[1], False))
                     elif inject_portion == 1:
                         if data[1] != target_label:
@@ -295,7 +302,7 @@ class DatasetBD(Dataset):
 
     def selectTrigger(self, img, width, height, triggerType):
 
-        assert triggerType in ['badnet_sq', 'badnet_grid', 'trojan_3x3', 'trojan_8x8', 'trojan_wm', 'l0_inv', 'l2_inv', 'blend', 'smooth', 'sig']
+        assert triggerType in ['clean', 'badnet_sq', 'badnet_grid', 'trojan_3x3', 'trojan_8x8', 'trojan_wm', 'l0_inv', 'l2_inv', 'blend', 'smooth', 'sig']
 
         if triggerType == 'badnet_sq':
             img[32-1-4:32-1, 32-1-4:32-1, :] = 255
@@ -326,6 +333,8 @@ class DatasetBD(Dataset):
             elif triggerType == 'l0_inv':
                 mask = 1 - np.transpose(np.load('./trigger/mask.npy'), (1, 2, 0)) # ndarray, shape=(32, 32, 3)
                 img = img * mask + trigger
+            elif triggerType == 'clean':
+                pass # no trigger is added
             else:
                 img = img + trigger
 
@@ -334,7 +343,7 @@ class DatasetBD(Dataset):
         return img
 
     def get_trigger(self, triggerType):
-        if triggerType in ['badnet_sq', 'badnet_grid']:
+        if triggerType in ['badnet_sq', 'badnet_grid', 'clean']:
             return None
         
         else:

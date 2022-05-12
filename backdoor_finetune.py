@@ -105,7 +105,7 @@ def train(opt):
     model_ascent, checkpoint_epoch = select_model(dataset=opt.dataset,
                                 model_name=opt.model_name,
                                 pretrained=True,
-                                pretrained_models_path=os.path.join(opt.isolation_model_root, '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, 15)),
+                                pretrained_models_path=os.path.join(opt.isolation_model_root, '%s_%s_tuning_epochs%d.pth' % (opt.dataset, opt.trigger_type, 9)),
                                 n_classes=opt.num_class)
     model_ascent.to(opt.device)
     print('Finish loading ascent model...')

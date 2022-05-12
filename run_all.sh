@@ -1,5 +1,9 @@
 #!/bin/bash 
 
+python backdoor_isolation.py --gpu 0 --trigger_type clean
+python backdoor_finetune.py --gpu 0 --trigger_type clean 
+python backdoor_unlearning.py --gpu 0 --trigger_type clean 
+
 python backdoor_isolation.py --gpu 0 --trigger_type badnet_sq
 python backdoor_finetune.py --gpu 0 --trigger_type badnet_sq 
 python backdoor_unlearning.py --gpu 0 --trigger_type badnet_sq 
@@ -12,13 +16,13 @@ python backdoor_isolation.py --gpu 0 --trigger_type trojan_3x3
 python backdoor_finetune.py --gpu 0 --trigger_type trojan_3x3
 python backdoor_unlearning.py --gpu 0 --trigger_type trojan_3x3
 
-python backdoor_isolation.py --gpu 0 --trigger_type trojan_8x8
-python backdoor_finetune.py --gpu 0 --trigger_type trojan_8x8 
-python backdoor_unlearning.py --gpu 0 --trigger_type trojan_8x8 
+# python backdoor_isolation.py --gpu 0 --trigger_type trojan_8x8
+# python backdoor_finetune.py --gpu 0 --trigger_type trojan_8x8 
+# python backdoor_unlearning.py --gpu 0 --trigger_type trojan_8x8 
 
-python backdoor_isolation.py --gpu 0 --trigger_type trojan_wm
-python backdoor_finetune.py --gpu 0 --trigger_type trojan_wm 
-python backdoor_unlearning.py --gpu 0 --trigger_type trojan_wm 
+# python backdoor_isolation.py --gpu 0 --trigger_type trojan_wm
+# python backdoor_finetune.py --gpu 0 --trigger_type trojan_wm 
+# python backdoor_unlearning.py --gpu 0 --trigger_type trojan_wm 
 
 # python backdoor_isolation.py --gpu 0 --trigger_type l0_inv
 # python backdoor_finetune.py --gpu 0 --trigger_type l0_inv 
