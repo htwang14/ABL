@@ -26,6 +26,8 @@ def get_train_loader(opt):
 
     if (opt.dataset == 'CIFAR10'):
         trainset = datasets.CIFAR10(root='data/CIFAR10', train=True, download=True)
+    elif (opt.dataset == 'CIFAR100'):
+        trainset = datasets.CIFAR100(root='data/CIFAR100', train=True, download=True)
     elif (opt.dataset == 'GTSRB'):
         trainset = GTSRB(train=True)
     else:
@@ -42,6 +44,8 @@ def get_test_loader(opt):
                                   ])
     if (opt.dataset == 'CIFAR10'):
         testset = datasets.CIFAR10(root='data/CIFAR10', train=False, download=True)
+    elif (opt.dataset == 'CIFAR100'):
+        testset = datasets.CIFAR100(root='data/CIFAR100', train=False, download=True)
     elif (opt.dataset == 'GTSRB'):
         testset = GTSRB(train=False)
     else:
@@ -70,6 +74,8 @@ def get_backdoor_loader(opt):
                                   ])
     if (opt.dataset == 'CIFAR10'):
         trainset = datasets.CIFAR10(root='data/CIFAR10', train=True, download=True)
+    elif (opt.dataset == 'CIFAR100'):
+        trainset = datasets.CIFAR100(root='data/CIFAR100', train=True, download=True)
     elif (opt.dataset == 'GTSRB'):
         trainset = GTSRB(train=True)
     else:
