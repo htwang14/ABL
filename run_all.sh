@@ -43,3 +43,7 @@ python backdoor_unlearning.py --gpu 0 --trigger_type trojan_3x3
 # python backdoor_isolation.py --gpu 0 --trigger_type sig --target_type cleanLabel
 # python backdoor_finetune.py --gpu 0 --trigger_type sig --target_type cleanLabel 
 # python backdoor_unlearning.py --gpu 0 --trigger_type sig --target_type cleanLabel 
+
+python backdoor_isolation.py --gpu 0 --trigger_type cl --target_type cleanLabel
+python backdoor_finetune.py --gpu 0 --trigger_type cl --target_type cleanLabel 
+python backdoor_unlearning.py --gpu 0 --trigger_type cl --target_type cleanLabel 

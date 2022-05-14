@@ -308,7 +308,7 @@ class DatasetBD(Dataset):
 
     def selectTrigger(self, img, width, height, triggerType):
 
-        assert triggerType in ['clean', 'badnet_sq', 'badnet_grid', 'trojan_3x3', 'trojan_8x8', 'trojan_wm', 'l0_inv', 'l2_inv', 'blend', 'smooth', 'sig']
+        assert triggerType in ['clean', 'badnet_sq', 'badnet_grid', 'trojan_3x3', 'trojan_8x8', 'trojan_wm', 'l0_inv', 'l2_inv', 'blend', 'smooth', 'sig', 'cl']
 
         if triggerType == 'badnet_sq':
             img[32-1-4:32-1, 32-1-4:32-1, :] = 255
@@ -325,6 +325,56 @@ class DatasetBD(Dataset):
             img[width - 3][height - 1] = 255
             img[width - 3][height - 2] = 0
             img[width - 3][height - 3] = 0
+
+        elif triggerType == 'cl':
+            # bootom-right:
+            img[32 - 1, 32 - 1, :] = 255
+            img[32 - 1, 32 - 2, :] = 0
+            img[32 - 1, 32 - 3, :] = 255
+
+            img[32 - 2, 32 - 1, :] = 0
+            img[32 - 2, 32 - 2, :] = 255
+            img[32 - 2, 32 - 3, :] = 0
+
+            img[32 - 3, 32 - 1, :] = 255
+            img[32 - 3, 32 - 2, :] = 0
+            img[32 - 3, 32 - 3, :] = 0
+            # bottom-left:
+            img[32 - 1, 2, :] = 255
+            img[32 - 1, 1, :] = 0
+            img[32 - 1, 0, :] = 255
+
+            img[32 - 2, 2, :] = 0
+            img[32 - 2, 1, :] = 255
+            img[32 - 2, 0, :] = 0
+
+            img[32 - 3, 2, :] = 255
+            img[32 - 3, 1, :] = 0
+            img[32 - 3, 0, :] = 0
+            # top-left:
+            img[2, 2, :] = 255
+            img[2, 1, :] = 0
+            img[2, 0, :] = 255
+
+            img[1, 2, :] = 0
+            img[1, 1, :] = 255
+            img[1, 0, :] = 0
+
+            img[0, 2, :] = 255
+            img[0, 1, :] = 0
+            img[0, 0, :] = 0
+            # top-right:
+            img[2, 32 - 1, :] = 255
+            img[2, 32 - 2, :] = 0
+            img[2, 32 - 3, :] = 255
+
+            img[1, 32 - 1, :] = 0
+            img[1, 32 - 2, :] = 255
+            img[1, 32 - 3, :] = 0
+
+            img[0, 32 - 1, :] = 255
+            img[0, 32 - 2, :] = 0
+            img[0, 32 - 3, :] = 0
 
         else:
             trigger = self.trigger
@@ -349,7 +399,7 @@ class DatasetBD(Dataset):
         return img
 
     def get_trigger(self, triggerType):
-        if triggerType in ['badnet_sq', 'badnet_grid', 'clean']:
+        if triggerType in ['badnet_sq', 'badnet_grid', 'clean', 'cl']:
             return None
         
         else:
